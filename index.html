@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Nómina">
+  <meta name="description" content="Calculadora de nómina Handling">
+  <title>Nómina Handling</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --surface2: #f0efeb;
+      --border: rgba(0,0,0,0.1);
+      --border2: rgba(0,0,0,0.18);
+      --text: #1a1a18;
+      --text2: #6b6b67;
+      --text3: #9e9e9a;
+      --red: #E40C4C;
+      --red-dark: #4E2830;
+      --red-bg: #fde8ef;
+      --red-text: #9b0a2f;
+      --danger: #c0392b;
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111110;
+        --surface: #1c1c1a;
+        --surface2: #252523;
+        --border: rgba(255,255,255,0.1);
+        --border2: rgba(255,255,255,0.18);
+        --text: #f0efe9;
+        --text2: #9e9e9a;
+        --text3: #6b6b67;
+        --red-bg: #2e0a15;
+        --red-text: #f07099;
+      }
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100dvh;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .app-header {
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border);
+      padding: 16px 20px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding-top: calc(16px + env(safe-area-inset-top));
+    }
+    .app-header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+    .app-header p { font-size: 12px; color: var(--text2); margin-top: 1px; }
+
+    .content { padding: 20px 16px 40px; max-width: 480px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--text3); margin: 0 0 8px;
+    }
+
+    .toggle-group {
+      display: flex; background: var(--surface2); border-radius: var(--radius);
+      padding: 3px; margin-bottom: 16px; gap: 2px;
+    }
+    .toggle-btn {
+      flex: 1; padding: 8px 10px; font-size: 13px; font-weight: 500;
+      background: transparent; border: none; border-radius: 8px;
+      cursor: pointer; color: var(--text2); transition: all 0.18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .toggle-btn.active {
+      background: var(--surface); color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 12px; color: var(--text2); font-weight: 500; }
+
+    select, input[type=number] {
+      width: 100%; background: var(--surface); border: 0.5px solid var(--border2);
+      border-radius: var(--radius); padding: 10px 12px; font-size: 15px;
+      color: var(--text); appearance: none; -webkit-appearance: none;
+      outline: none; font-family: inherit;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e9e9a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+    }
+    select:focus, input[type=number]:focus {
+      border-color: var(--red); box-shadow: 0 0 0 3px rgba(228,12,76,0.15);
+    }
+
+    .irpf-block { margin-bottom: 20px; }
+    .irpf-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface); border: 0.5px solid var(--border2);
+      border-radius: var(--radius); padding: 10px 14px;
+    }
+    input[type=range] { flex: 1; height: 4px; accent-color: var(--red); cursor: pointer; }
+    .irpf-num-wrap { position: relative; width: 64px; flex-shrink: 0; }
+    .irpf-num-wrap input[type=number] {
+      padding: 6px 22px 6px 8px; font-size: 14px; font-weight: 500;
+      text-align: right; border-radius: 7px;
+    }
+    .irpf-num-wrap span {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      font-size: 13px; color: var(--text2); pointer-events: none;
+    }
+
+    .horas-block { margin-bottom: 20px; }
+    .horas-row { display: flex; align-items: center; gap: 10px; }
+    .horas-row input[type=number] { width: 100px; flex-shrink: 0; }
+    .horas-hint { font-size: 12px; color: var(--text3); }
+
+    .divider { border: none; border-top: 0.5px solid var(--border); margin: 4px 0 20px; }
+
+    /* PLUSES */
+    .pluses-card {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 20px;
+    }
+    .plus-row {
+      display: grid;
+      grid-template-columns: 1fr 52px 72px;
+      align-items: center;
+      padding: 11px 14px;
+      border-bottom: 0.5px solid var(--border);
+      gap: 8px;
+    }
+    .plus-row:last-child { border-bottom: none; }
+    .plus-info { min-width: 0; }
+    .plus-name { font-size: 14px; color: var(--text); }
+    .plus-rate { font-size: 11px; color: var(--text3); margin-top: 2px; line-height: 1.3; }
+    .pluses-card input[type=number].plus-input {
+      width: 52px !important; padding: 7px 6px; font-size: 15px;
+      font-weight: 600; text-align: center; border-radius: 8px;
+    }
+    .plus-result { font-size: 13px; font-weight: 500; color: var(--text3); text-align: right; }
+
+    /* Toggle switch */
+    .switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: var(--border2); border-radius: 26px; transition: 0.2s;
+    }
+    .slider:before {
+      content: ''; position: absolute; height: 20px; width: 20px;
+      left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s;
+    }
+    .switch input:checked + .slider { background: var(--red); }
+    .switch input:checked + .slider:before { transform: translateX(18px); }
+
+    .plus-row-toggle { grid-template-columns: 1fr 44px 72px; }
+    .plus-toggle-result { font-size: 13px; font-weight: 500; color: var(--text3); min-width: 70px; text-align: right; flex-shrink: 0; }
+    .plus-toggle-result.active { color: var(--red); }
+
+    /* METRICS */
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .metric {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 14px;
+    }
+    .metric.full { grid-column: 1 / -1; }
+    .metric.dark { background: var(--red-dark); border-color: transparent; }
+    .metric.accent { background: var(--red-bg); border-color: rgba(228,12,76,0.2); }
+    .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+    .metric.dark .metric-label { color: rgba(255,255,255,0.7); }
+    .metric.accent .metric-label { color: var(--red-text); }
+    .metric-val { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); }
+    .metric.dark .metric-val { color: #fff; }
+    .metric.accent .metric-val { color: var(--red); }
+    .metric-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .metric.dark .metric-sub { color: rgba(255,255,255,0.55); }
+
+    /* BREAKDOWN */
+    .breakdown {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 8px;
+    }
+    .bd-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 14px; font-size: 13px; border-bottom: 0.5px solid var(--border);
+    }
+    .bd-row:last-child { border-bottom: none; }
+    .bd-row.total { background: var(--surface2); font-weight: 600; }
+    .bd-row.subtotal { background: var(--red-bg); }
+    .bd-key { color: var(--text2); }
+    .bd-row.total .bd-key { color: var(--text); }
+    .bd-row.subtotal .bd-key { color: var(--red-text); font-weight: 500; }
+    .bd-amt { color: var(--text); font-weight: 500; }
+    .bd-row.deduct .bd-amt { color: var(--danger); }
+    .bd-row.subtotal .bd-amt { color: var(--red); font-weight: 600; }
+
+    .badge-parcial {
+      display: inline-block; font-size: 10px; padding: 1px 6px;
+      border-radius: 20px; background: #FFF3CD; color: #856404; margin-left: 5px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .badge-parcial { background: #3a2e00; color: #f5c518; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Calculadora de nómina</h1>
+  <p>Handling · Salario mensual según grupo y jornada</p>
+</header>
+
+<main class="content">
+
+  <p class="section-label">Tipo de jornada</p>
+  <div class="toggle-group" role="group">
+    <button class="toggle-btn active" id="btn-ftc" onclick="setJornada('FTC')">Jornada completa</button>
+    <button class="toggle-btn" id="btn-ftp" onclick="setJornada('FTP')">Jornada parcial</button>
+  </div>
+
+  <p class="section-label">Categoría profesional</p>
+  <div class="fields-grid">
+    <div class="field">
+      <label for="grupo">Grupo profesional</label>
+      <select id="grupo" onchange="recalc()">
+        <option value="aux">Serv. Auxiliares</option>
+        <option value="adm">Administrativos</option>
+        <option value="tec">Técnicos gestores</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="nivel">Nivel</label>
+      <select id="nivel" onchange="recalc()">
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+      </select>
+    </div>
+  </div>
+
+  <p class="section-label">Retención IRPF</p>
+  <div class="irpf-block">
+    <div class="irpf-row">
+      <input type="range" id="irpf-range" min="0" max="45" step="1" value="12" oninput="syncFromSlider(this.value)">
+      <div class="irpf-num-wrap">
+        <input type="number" id="irpf-text" min="0" max="45" step="0.1" value="12" oninput="syncFromText(this.value)">
+        <span>%</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="horas-block" class="horas-block" style="display:none;">
+    <p class="section-label">Horas trabajadas al mes</p>
+    <div class="horas-row">
+      <input type="number" id="horas-input" min="1" max="200" value="100" step="1" oninput="recalc()">
+      <span class="horas-hint">Jornada completa: 155,6 h/mes</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- PLUSES POR CANTIDAD -->
+  <p class="section-label">Pluses por cantidad</p>
+  <div class="pluses-card">
+
+    <div class="plus-row">
+      <div class="plus-info">
+        <div class="plus-name">Nocturnidad</div>
+        <div class="plus-rate">1,69 € / hora</div>
+      </div>
+      <input type="number" class="plus-input" id="p-nocturnidad" min="0" value="0" step="1" oninput="recalc()">
+      <div class="plus-result" id="r-nocturnidad">0,00 €</div>
+    </div>
+
+    <div class="plus-row">
+      <div class="plus-info">
+        <div class="plus-name">Festivo</div>
+        <div class="plus-rate">2,98 € / hora</div>
+      </div>
+      <input type="number" class="plus-input" id="p-festivo" min="0" value="0" step="1" oninput="recalc()">
+      <div class="plus-result" id="r-festivo">0,00 €</div>
+    </div>
+
+    <div class="plus-row">
+      <div class="plus-info">
+        <div class="plus-name">Domingo</div>
+        <div class="plus-rate">2,93 € / hora</div>
+      </div>
+      <input type="number" class="plus-input" id="p-domingo" min="0" value="0" step="1" oninput="recalc()">
+      <div class="plus-result" id="r-domingo">0,00 €</div>
+    </div>
+
+    <div class="plus-row">
+      <div class="plus-info">
+        <div class="plus-name">Fraccionada</div>
+        <div class="plus-rate">11,86 € / turno partido</div>
+      </div>
+      <input type="number" class="plus-input" id="p-fraccionada" min="0" value="0" step="1" oninput="recalc()">
+      <div class="plus-result" id="r-fraccionada">0,00 €</div>
+    </div>
+
+    <div class="plus-row">
+      <div class="plus-info">
+        <div class="plus-name">Madrugue</div>
+        <div class="plus-rate">6,72 € / día (entrada &lt;6h)</div>
+      </div>
+      <input type="number" class="plus-input" id="p-madrugue" min="0" value="0" step="1" oninput="recalc()">
+      <div class="plus-result" id="r-madrugue">0,00 €</div>
+    </div>
+
+    <div class="plus-row">
+      <div class="plus-info">
+        <div class="plus-name">Transporte</div>
+        <div class="plus-rate">2,96 € / día trabajado</div>
+      </div>
+      <input type="number" class="plus-input" id="p-transporte" min="0" value="0" step="1" oninput="recalc()">
+      <div class="plus-result" id="r-transporte">0,00 €</div>
+    </div>
+
+    <div class="plus-row">
+      <div class="plus-info">
+        <div class="plus-name">Manutención</div>
+        <div class="plus-rate">6,72 € / día (incluye 14-16h ó 21-23h, ≥6h)</div>
+      </div>
+      <input type="number" class="plus-input" id="p-manutencion" min="0" value="0" step="1" oninput="recalc()">
+      <div class="plus-result" id="r-manutencion">0,00 €</div>
+    </div>
+
+  </div>
+
+  <!-- HORAS PERENTORIAS (depende de grupo y nivel) -->
+  <p class="section-label">Horas perentorias</p>
+  <div class="pluses-card">
+    <div class="plus-row">
+      <div class="plus-info">
+        <div class="plus-name">Horas perentorias</div>
+        <div class="plus-rate" id="rate-perentorias">— € / hora · según grupo y nivel</div>
+      </div>
+      <input type="number" class="plus-input" id="p-perentorias" min="0" value="0" step="1" oninput="recalc()">
+      <div class="plus-result" id="r-perentorias">0,00 €</div>
+    </div>
+  </div>
+
+  <!-- PLUSES FIJOS -->
+  <p class="section-label">Pluses proporcionales a jornada</p>
+  <div class="pluses-card">
+
+    <div class="plus-row plus-row-toggle">
+      <div class="plus-info">
+        <div class="plus-name">FTP</div>
+        <div class="plus-rate">102,90 € × % jornada</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="sw-ftp" onchange="recalc()">
+        <span class="slider"></span>
+      </label>
+      <div class="plus-toggle-result" id="r-ftp">—</div>
+    </div>
+
+    <div class="plus-row plus-row-toggle">
+      <div class="plus-info">
+        <div class="plus-name">Supervisión</div>
+        <div class="plus-rate">80,03 € × % jornada</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="sw-supervision" onchange="recalc()">
+        <span class="slider"></span>
+      </label>
+      <div class="plus-toggle-result" id="r-supervision">—</div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- RESULTADOS -->
+  <div class="metrics-grid">
+
+    <div class="metric">
+      <div class="metric-label">Salario base anual</div>
+      <div class="metric-val" id="res-anual">—</div>
+      <div class="metric-sub" id="res-anual-sub">Jornada completa</div>
+    </div>
+
+    <div class="metric" id="card-parcialidad" style="display:none;">
+      <div class="metric-label">Parcialidad</div>
+      <div class="metric-val" id="res-parcialidad">—</div>
+      <div class="metric-sub" id="res-horas-label">sobre 155,6 h</div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Bruto s/ pluses</div>
+      <div class="metric-val" id="res-bruto">—</div>
+      <div class="metric-sub">Sin pluses ni IRPF</div>
+    </div>
+
+    <div class="metric accent" id="card-pluses">
+      <div class="metric-label">Total pluses</div>
+      <div class="metric-val" id="res-pluses">0,00 €</div>
+      <div class="metric-sub" id="res-pluses-sub">Este mes</div>
+    </div>
+
+    <div class="metric dark full">
+      <div class="metric-label">Neto mensual estimado</div>
+      <div class="metric-val" id="res-neto">—</div>
+      <div class="metric-sub" id="res-neto-sub">Tras IRPF</div>
+    </div>
+
+  </div>
+
+  <div class="breakdown">
+    <div class="bd-row">
+      <span class="bd-key">Salario base mensual</span>
+      <span class="bd-amt" id="bd-base">—</span>
+    </div>
+    <div class="bd-row">
+      <span class="bd-key">Prorrata paga verano</span>
+      <span class="bd-amt" id="bd-verano">—</span>
+    </div>
+    <div class="bd-row">
+      <span class="bd-key">Prorrata paga navidad</span>
+      <span class="bd-amt" id="bd-navidad">—</span>
+    </div>
+    <div class="bd-row" id="bd-parcial-row" style="display:none;">
+      <span class="bd-key">Ajuste jornada parcial <span class="badge-parcial" id="bd-parcial-pct">—</span></span>
+      <span class="bd-amt" id="bd-parcial-val">—</span>
+    </div>
+    <div class="bd-row deduct">
+      <span class="bd-key">Contingencias comunes (4,70%)</span>
+      <span class="bd-amt" id="bd-ss-comunes">—</span>
+    </div>
+    <div class="bd-row deduct">
+      <span class="bd-key">Desempleo (1,55%)</span>
+      <span class="bd-amt" id="bd-ss-desempleo">—</span>
+    </div>
+    <div class="bd-row deduct">
+      <span class="bd-key">Formación profesional (0,10%)</span>
+      <span class="bd-amt" id="bd-ss-fp">—</span>
+    </div>
+    <div class="bd-row deduct">
+      <span class="bd-key">MEI (0,15%)</span>
+      <span class="bd-amt" id="bd-ss-mei">—</span>
+    </div>
+    <div class="bd-row deduct" style="font-weight:600;">
+      <span class="bd-key">Total Seguridad Social (6,50%)</span>
+      <span class="bd-amt" id="bd-ss-total">—</span>
+    </div>
+    <div class="bd-row deduct">
+      <span class="bd-key">Retención IRPF (<span id="bd-irpf-pct">—</span>)</span>
+      <span class="bd-amt" id="bd-irpf-val">—</span>
+    </div>
+    <div class="bd-row total">
+      <span class="bd-key">Bruto s/ pluses</span>
+      <span class="bd-amt" id="bd-bruto">—</span>
+    </div>
+    <div class="bd-row subtotal">
+      <span class="bd-key">Total pluses</span>
+      <span class="bd-amt" id="bd-pluses">0,00 €</span>
+    </div>
+    <div class="bd-row total">
+      <span class="bd-key">Bruto total</span>
+      <span class="bd-amt" id="bd-bruto-total">—</span>
+    </div>
+    <div class="bd-row total">
+      <span class="bd-key">Neto mensual</span>
+      <span class="bd-amt" id="bd-neto">—</span>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SAL = {
+  tec: [29763.95, 29822.15, 30712.46, 31326.72, 31940.97, 33218.61, 34547.35],
+  adm: [19485.59, 23075.92, 23769.76, 24245.15, 24720.55, 25709.37, 26737.75],
+  aux: [19295.76, 22851.32, 23538.41, 24009.17, 24479.94, 25459.14, 26477.50]
+};
+
+const PERENTORIAS = {
+  tec: [30.42, 30.48, 31.39, 32.02, 32.65, 33.96, 35.32],
+  adm: [19.92, 23.59, 24.29, 24.79, 25.27, 26.28, 27.33],
+  aux: [19.72, 23.36, 24.06, 24.54, 25.03, 26.02, 27.07]
+};
+
+const PLUSES_CANTIDAD = [
+  { id: 'nocturnidad', rate: 1.69 },
+  { id: 'festivo',     rate: 2.98 },
+  { id: 'domingo',     rate: 2.93 },
+  { id: 'fraccionada', rate: 11.86 },
+  { id: 'madrugue',   rate: 6.72 },
+  { id: 'transporte',  rate: 2.96 },
+  { id: 'manutencion', rate: 6.72 },
+];
+
+const PLUSES_FIJOS = [
+  { id: 'ftp',        amount: 102.90 },
+  { id: 'supervision', amount: 80.03 },
+];
+
+const H_MES = 155.6363636;
+let jornada = 'FTC';
+
+function setJornada(j) {
+  jornada = j;
+  document.getElementById('btn-ftc').classList.toggle('active', j==='FTC');
+  document.getElementById('btn-ftp').classList.toggle('active', j==='FTP');
+  ['horas-block','card-parcialidad','bd-parcial-row'].forEach(id => {
+    document.getElementById(id).style.display = j==='FTP' ? '' : 'none';
+  });
+  recalc();
+}
+
+function syncFromSlider(v) {
+  document.getElementById('irpf-text').value = v;
+  recalc();
+}
+
+function syncFromText(v) {
+  let n = parseFloat(v);
+  if (isNaN(n)) return;
+  n = Math.min(45, Math.max(0, n));
+  document.getElementById('irpf-range').value = Math.round(n);
+  recalc();
+}
+
+function fmt(n) {
+  return n.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+}
+
+function recalc() {
+  const grupo = document.getElementById('grupo').value;
+  const nivel = parseInt(document.getElementById('nivel').value) - 1;
+  const irpfRaw = parseFloat(document.getElementById('irpf-text').value);
+  const irpf = isNaN(irpfRaw) ? 0 : Math.min(45, Math.max(0, irpfRaw)) / 100;
+  const horas = parseFloat(document.getElementById('horas-input').value) || 0;
+
+  const anual = SAL[grupo][nivel];
+  const mensualBase = anual / 14;
+  const ppVerano = anual / 14 / 12;
+  const ppNavidad = anual / 14 / 12;
+
+  let bruto, parcialidad = null;
+  if (jornada === 'FTC') {
+    bruto = mensualBase + ppVerano + ppNavidad;
+    parcialidad = 1;
+  } else {
+    parcialidad = horas / H_MES;
+    bruto = (mensualBase + ppVerano + ppNavidad) * parcialidad;
+  }
+
+  // Horas perentorias (tarifa depende de grupo y nivel)
+  const tarifaPerentorias = PERENTORIAS[grupo][nivel];
+  const horasPerentorias = parseFloat(document.getElementById('p-perentorias').value) || 0;
+  const importePerentorias = horasPerentorias * tarifaPerentorias;
+  document.getElementById('rate-perentorias').textContent = fmt(tarifaPerentorias) + ' / hora · según grupo y nivel';
+  document.getElementById('r-perentorias').textContent = fmt(importePerentorias);
+  document.getElementById('r-perentorias').style.color = importePerentorias > 0 ? 'var(--red)' : 'var(--text3)';
+
+  // Pluses por cantidad
+  let totalPluses = importePerentorias;
+  PLUSES_CANTIDAD.forEach(p => {
+    const qty = parseFloat(document.getElementById('p-' + p.id).value) || 0;
+    const importe = qty * p.rate;
+    totalPluses += importe;
+    const el = document.getElementById('r-' + p.id);
+    el.textContent = fmt(importe);
+    el.style.color = importe > 0 ? 'var(--red)' : 'var(--text3)';
+  });
+
+  // Pluses fijos proporcionales
+  PLUSES_FIJOS.forEach(p => {
+    const active = document.getElementById('sw-' + p.id).checked;
+    const importe = active ? p.amount * parcialidad : 0;
+    totalPluses += importe;
+    const el = document.getElementById('r-' + p.id);
+    el.textContent = active ? fmt(importe) : '—';
+    el.className = 'plus-toggle-result' + (active ? ' active' : '');
+  });
+
+  const brutoTotal = bruto + totalPluses;
+
+  // Seguridad Social (a cargo del trabajador)
+  const ssComunes = brutoTotal * 0.0470;
+  const ssDesempleo = brutoTotal * 0.0155;
+  const ssFP = brutoTotal * 0.0010;
+  const ssMEI = brutoTotal * 0.0015;
+  const ssTotal = ssComunes + ssDesempleo + ssFP + ssMEI;
+
+  const baseTrasSS = brutoTotal - ssTotal;
+  const retencion = brutoTotal * irpf;
+  const neto = brutoTotal - ssTotal - retencion;
+
+  // Métricas
+  document.getElementById('res-anual').textContent = fmt(anual);
+  document.getElementById('res-bruto').textContent = fmt(bruto);
+  document.getElementById('res-pluses').textContent = fmt(totalPluses);
+  document.getElementById('res-neto').textContent = fmt(neto);
+  document.getElementById('res-neto-sub').textContent = 'Tras SS (6,50%) e IRPF (' + (irpf*100).toFixed(1) + '%)';
+
+  if (jornada === 'FTP') {
+    document.getElementById('res-parcialidad').textContent = (parcialidad*100).toFixed(1) + '%';
+    document.getElementById('res-horas-label').textContent = horas.toFixed(0) + ' h / 155,6 h';
+    document.getElementById('bd-parcial-pct').textContent = (parcialidad*100).toFixed(1) + '%';
+    document.getElementById('bd-parcial-val').textContent = fmt(bruto - (mensualBase+ppVerano+ppNavidad));
+  }
+
+  const f = jornada === 'FTP' ? parcialidad : 1;
+  document.getElementById('bd-base').textContent = fmt(mensualBase * f);
+  document.getElementById('bd-verano').textContent = fmt(ppVerano * f);
+  document.getElementById('bd-navidad').textContent = fmt(ppNavidad * f);
+  document.getElementById('bd-bruto').textContent = fmt(bruto);
+  document.getElementById('bd-pluses').textContent = fmt(totalPluses);
+  document.getElementById('bd-bruto-total').textContent = fmt(brutoTotal);
+  document.getElementById('bd-ss-comunes').textContent = '−' + fmt(ssComunes);
+  document.getElementById('bd-ss-desempleo').textContent = '−' + fmt(ssDesempleo);
+  document.getElementById('bd-ss-fp').textContent = '−' + fmt(ssFP);
+  document.getElementById('bd-ss-mei').textContent = '−' + fmt(ssMEI);
+  document.getElementById('bd-ss-total').textContent = '−' + fmt(ssTotal);
+  document.getElementById('bd-irpf-pct').textContent = (irpf*100).toFixed(1) + '%';
+  document.getElementById('bd-irpf-val').textContent = '−' + fmt(retencion);
+  document.getElementById('bd-neto').textContent = fmt(neto);
+}
+
+recalc();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
