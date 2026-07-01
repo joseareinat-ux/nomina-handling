@@ -390,6 +390,18 @@
       <div class="plus-toggle-result" id="r-supervision">—</div>
     </div>
 
+    <div class="plus-row plus-row-toggle">
+      <div class="plus-info">
+        <div class="plus-name">Agente jefe</div>
+        <div class="plus-rate">137,94 € × % jornada</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="sw-agentejefe" onchange="recalc()">
+        <span class="slider"></span>
+      </label>
+      <div class="plus-toggle-result" id="r-agentejefe">—</div>
+    </div>
+
   </div>
 
   <hr class="divider">
@@ -514,8 +526,9 @@ const PLUSES_CANTIDAD = [
 ];
 
 const PLUSES_FIJOS = [
-  { id: 'ftp',        amount: 102.90 },
-  { id: 'supervision', amount: 80.03 },
+  { id: 'ftp',          amount: 102.90 },
+  { id: 'supervision',  amount: 80.03  },
+  { id: 'agentejefe',   amount: 137.94 },
 ];
 
 const H_MES = 155.6363636;
