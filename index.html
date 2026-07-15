@@ -369,7 +369,7 @@
     <div class="plus-row plus-row-toggle">
       <div class="plus-info">
         <div class="plus-name">FTP</div>
-        <div class="plus-rate">102,90 € × % jornada</div>
+        <div class="plus-rate">102,90 € × % jornada (máx. 100%)</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="sw-ftp" onchange="recalc()">
@@ -381,7 +381,7 @@
     <div class="plus-row plus-row-toggle">
       <div class="plus-info">
         <div class="plus-name">Supervisión</div>
-        <div class="plus-rate">80,03 € × % jornada</div>
+        <div class="plus-rate">80,03 € × % jornada (máx. 100%)</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="sw-supervision" onchange="recalc()">
@@ -393,7 +393,7 @@
     <div class="plus-row plus-row-toggle">
       <div class="plus-info">
         <div class="plus-name">Agente jefe</div>
-        <div class="plus-rate">137,94 € × % jornada</div>
+        <div class="plus-rate">137,94 € × % jornada (máx. 100%)</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="sw-agentejefe" onchange="recalc()">
@@ -601,10 +601,11 @@ function recalc() {
     el.style.color = importe > 0 ? 'var(--red)' : 'var(--text3)';
   });
 
-  // Pluses fijos proporcionales
+  // Pluses fijos proporcionales (tope al 100% de jornada)
+  const parcialidadCapped = Math.min(parcialidad, 1);
   PLUSES_FIJOS.forEach(p => {
     const active = document.getElementById('sw-' + p.id).checked;
-    const importe = active ? p.amount * parcialidad : 0;
+    const importe = active ? p.amount * parcialidadCapped : 0;
     totalPluses += importe;
     const el = document.getElementById('r-' + p.id);
     el.textContent = active ? fmt(importe) : '—';
